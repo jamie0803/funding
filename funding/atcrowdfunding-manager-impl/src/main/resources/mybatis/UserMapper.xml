@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.atguigu.atcrowdfunding.manager.dao.UserMapper">
+    <resultMap id="BaseResultMap" type="com.atguigu.atcrowdfunding.bean.User">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="loginacct" property="loginacct" jdbcType="VARCHAR"/>
+        <result column="userpswd" property="userpswd" jdbcType="VARCHAR"/>
+        <result column="username" property="username" jdbcType="VARCHAR"/>
+        <result column="email" property="email" jdbcType="VARCHAR"/>
+        <result column="createtime" property="createtime" jdbcType="VARCHAR"/>
+    </resultMap>
+    <!-- 登录 -->
+    <select id="login" resultMap="BaseResultMap">
+        select * from t_user where loginacct=#{loginacct}
+    </select>
+    <!-- 查询全部用户信息 -->
+    <select id="getAllUser" resultMap="BaseResultMap">
+        SELECT * FROM t_user
+        <where>
+            <if test='text!=null and text!=""'>
+                concat(loginacct,email) like concat('%',#{text},'%')
+            </if>
+        </where>
+        limit #{startIndex}, #{pageSize}
+    </select>
+    <!-- 查询全部记录数 -->
+    <select id="count" resultType="java.lang.Integer">
+        SELECT count(*) FROM t_user
+        <where>
+            <if test='text!=null and text!=""'>
+                concat(loginacct,email) like concat('%',#{text},'%')
+            </if>
+        </where>
+    </select>
+    <!-- 插入 -->
+    <insert id="insertSelective" parameterType="com.atguigu.atcrowdfunding.bean.User">
+      insert into t_user(loginacct, userpswd, username, email, createtime)
+      VALUES (#{loginacct}, #{userpswd}, #{username}, #{email}, #{createtime})
+    </insert>
+    <insert id="insert" parameterType="com.atguigu.atcrowdfunding.bean.User">
+        insert into t_user(loginacct, userpswd, username, email, createtime)
+        VALUES (#{loginacct}, #{userpswd}, #{username}, #{email}, #{createtime})
+    </insert>
+    <!-- 新增前判断是否存在登录名和邮箱一样的用户 -->
+    <select id="queryUserCount" resultType="Integer">
+        select count(*) from t_user
+        <where>
+            <if test="loginacct != null">
+                loginacct = #{loginacct}
+            </if>
+            <if test="email != null">
+                and email = #{email}
+            </if>
+        </where>
+    </select>
+    <!-- 删除 -->
+    <delete id="deleteUser" parameterType="Integer">
+        delete from t_user
+        <where>
+            <if test="_parameter != null and _parameter != ''">
+                id = #{id,jdbcType=INTEGER}
+            </if>
+        </where>
+    </delete>
+    <!-- 根据id查询用户 -->
+    <select id="getUserById" parameterType="Integer" resultMap="BaseResultMap">
+        select * from t_user
+        <where>
+            <if test="_parameter != null">
+                id = #{id, jdbcType=INTEGER}
+            </if>
+        </where>
+    </select>
+    <!-- 更新用户信息 -->
+    <update id="update" parameterType="com.atguigu.atcrowdfunding.bean.User">
+        update t_user
+        <set>
+            <if test="loginacct!=null and loginacct!=''">
+                loginacct = #{loginacct, jdbcType=VARCHAR},
+            </if>
+            <if test="username!=null and username !=''">
+                username = #{username, jdbcType=VARCHAR},
+            </if>
+            <if test="userpswd!=null and userpswd!=''">
+                userpswd = #{userpswd, jdbcType=VARCHAR},
+            </if>
+            <if test="email!=null and email!=''">
+                email = #{email, jdbcType=VARCHAR}
+            </if>
+        </set>
+        <where>
+            id = #{id, jdbcType=INTEGER}
+        </where>
+    </update>
+    <delete id="batchDelete" parameterType="Integer[]">
+        delete from t_user
+        where id in
+        <foreach collection="array" separator="," open="(" close=")" item="id">
+            #{id, jdbcType=INTEGER}
+        </foreach>
+    </delete>
+    <!-- 已分配角色 -->
+    <select id="selectAllRole" parameterType="integer" resultType="com.atguigu.atcrowdfunding.bean.Role">
+        select r.* from t_user_role ur, t_role r
+        where ur.roleid = r.id
+        <if test="_parameter!=null and _parameter!=''">
+            and userid =#{userId}
+        </if>
+    </select>
+    <!-- 未分配角色 -->
+    <select id="selectUnassignedRole" parameterType="list" resultType="com.atguigu.atcrowdfunding.bean.Role">
+        select distinct r.* from t_role r left join t_user_role ur
+        on ur.roleid = r.id
+        <where>
+            <if test="list!=null and list.size()>0">
+                and r.id not in
+                <foreach collection="list" item="role" open="(" close=")" separator=",">
+                    #{role.id}
+                </foreach>
+            </if>
+        </where>
+    </select>
+    <select id="assignExist" resultType="integer">
+        select count(*) from t_user_role
+        <where>
+            <if test="userId!=null and userId!=''">
+                userid = #{userId}
+            </if>
+            <if test="ids!=null and ids.size>0">
+                and roleid in
+                <foreach collection="ids" item="id" open="(" close=")" separator=",">
+                   #{id}
+                </foreach>
+            </if>
+        </where>
+    </select>
+    <insert id="assign">
+        insert into t_user_role(userid, roleid) values
+        <foreach collection="ids" item="roleId" separator=",">
+            (#{userId},#{roleId})
+        </foreach>
+    </insert>
+    <delete id="unassign">
+        delete from t_user_role
+        <where>
+            <if test="userId!=null and userId!=''">
+                userid = #{userId}
+            </if>
+            <if test="ids!=null and ids!=''">
+                and roleid in
+                <foreach collection="ids" item="id" separator="," open="(" close=")">
+                    #{id}
+                </foreach>
+            </if>
+        </where>
+    </delete>
+</mapper>

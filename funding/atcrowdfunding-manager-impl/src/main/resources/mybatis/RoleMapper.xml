@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.atguigu.atcrowdfunding.manager.dao.RoleMapper">
+    <resultMap id="BaseResultMap" type="com.atguigu.atcrowdfunding.bean.Role">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="roleCode" property="roleCode" jdbcType="VARCHAR"/>
+        <result column="mark" property="mark" jdbcType="VARCHAR"/>
+        <result column="createtime" property="createtime" jdbcType="VARCHAR"/>
+    </resultMap>
+    <select id="queryPage" resultMap="BaseResultMap">
+        select * from t_role
+        <where>
+            <if test="text != null and text != ''">
+                name like concat('%',#{text},'%')
+            </if>
+        </where>
+        limit #{startIndex}, #{pageSize}
+    </select>
+    <select id="count" resultType="integer">
+        select count(*) from t_role
+        <where>
+            <if test="text != null and text != ''">
+                name like concat('%',#{text},'%')
+            </if>
+        </where>
+    </select>
+    <insert id="insertSelective" parameterType="com.atguigu.atcrowdfunding.bean.Role">
+        insert into t_user(code, name, mark, createtime)
+        values(#{code,jdbcType=VARCHAR}, #{name,jdbcType=VARCHAR}, #{mark,jdbcType=VARCHAR}, ${createtime})
+    </insert>
+    <update id="update" parameterType="com.atguigu.atcrowdfunding.bean.Role">
+        update t_role
+        <set>
+            <if test="code != null and code != ''">
+                code = #{code}
+            </if>
+            <if test="name != null and name != ''">
+                name = #{name}
+            </if>
+            <if test="mark != null and mark != ''">
+                mark = #{mark}
+            </if>
+            <if test="createtime != null and createtime != ''">
+                createtime = #{createtime}
+            </if>
+        </set>
+    </update>
+    <insert id="assign">
+        <if test="userId!=null and userId != '' and ids!=null and ids!=''">
+            <foreach collection="ids" item="id" open="(" close=")" separator=",">
+                insert into t_user_role(userid, roleid) values (#{userId}, #{id})
+            </foreach>
+        </if>
+    </insert>
+
+    <insert id="assignRolePermission">
+        insert into t_role_permission(roleid,permissionid) values
+        <foreach collection="ids" separator="," item="id">
+            (#{roleid},#{id})
+        </foreach>
+    </insert>
+    <select id="selectCount" resultType="integer">
+        select count(*) from t_role_permission
+        <where>
+            <if test="roleid != null and roleid != ''">
+                roleid = #{roleid}
+            </if>
+            <if test="ids != null and ids.size()>0">
+                and permissionid in
+                <foreach collection="ids" open="(" close=")" separator="," item="id">
+                    #{id}
+                </foreach>
+            </if>
+        </where>
+    </select>
+    <delete id="cancelAssignByRoleid" parameterType="integer">
+        delete from t_role_permission
+        where roleid=#{roleid}
+    </delete>
+</mapper>
